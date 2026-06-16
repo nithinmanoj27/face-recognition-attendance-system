@@ -1,25 +1,25 @@
 # face-recognition-attendance-system
 Secure attendance management system using face recognition, Flask, PostgreSQL, Docker, and OpenCV.
 
-# 📸 Face Recognition Attendance System
+#  Face Recognition Attendance System
 
 A secure, containerized web application that automates student attendance using face recognition technology. Built using Flask, PostgreSQL, OpenCV, and Docker, the system provides secure role-based access control, live attendance marking, and verifiable proof-of-attendance generation.
 
 ---
 
-## 🚀 Features
+##  Features
 
-- 🔐 Role-Based Access Control (RBAC) with separate portals for Students, Teachers, and Super Admins.
-- 🎥 Video-based facial enrollment for improved recognition accuracy.
-- 📷 Live attendance marking using classroom image capture.
-- ✉️ Email OTP verification for registration and password resets.
-- 📝 Automated proof-of-attendance generation with annotated images.
-- 📱 Mobile-friendly interface with optimized camera support.
-- 🐳 Dockerized deployment with Nginx reverse proxy and HTTPS support.
+-  Role-Based Access Control (RBAC) with separate portals for Students, Teachers, and Super Admins.
+-  Video-based facial enrollment for improved recognition accuracy.
+-  Live attendance marking using classroom image capture.
+-  Email OTP verification for registration and password resets.
+-  Automated proof-of-attendance generation with annotated images.
+-  Mobile-friendly interface with optimized camera support.
+-  Dockerized deployment with Nginx reverse proxy and HTTPS support.
 
 ---
 
-## 🛠️ Tech Stack
+##  Tech Stack
 
 | Category | Technologies |
 |----------|--------------|
@@ -31,7 +31,7 @@ A secure, containerized web application that automates student attendance using 
 
 ---
 
-## 📂 Project Structure
+##  Project Structure
 
 ```text
 attendance-system-flask/
@@ -49,7 +49,7 @@ attendance-system-flask/
 
 ---
 
-## 📋 Prerequisites
+##  Prerequisites
 
 Install the following before running the project:
 
@@ -58,9 +58,9 @@ Install the following before running the project:
 
 ---
 
-## ⚙️ Installation & Setup
+##  Installation & Setup
 
-### 1️⃣ Clone the repository
+### 1️ Clone the repository
 
 ```bash
 git clone https://github.com/YOUR_USERNAME/face-recognition-attendance-system.git
@@ -68,7 +68,7 @@ git clone https://github.com/YOUR_USERNAME/face-recognition-attendance-system.gi
 cd face-recognition-attendance-system
 ```
 
-### 2️⃣ Configure environment variables
+### 2️ Configure environment variables
 
 Create a `.env` file in the root directory.
 
@@ -90,7 +90,7 @@ MAIL_PASSWORD=your-google-app-password
 
 ---
 
-### 3️⃣ Generate SSL certificates
+### 3️ Generate SSL certificates
 
 Create a `certs` folder.
 
@@ -110,7 +110,7 @@ openssl req -x509 -newkey rsa:4096 -nodes \
 
 ---
 
-### 4️⃣ Configure Nginx
+### 4️ Configure Nginx
 
 Open:
 
@@ -132,7 +132,7 @@ server_name 192.168.1.10;
 
 ---
 
-## 🚀 Running the Application
+##  Running the Application
 
 Build and start the containers.
 
@@ -158,22 +158,11 @@ Example:
 https://192.168.1.10
 ```
 
-> ⚠️ Browsers will show a security warning because a self-signed certificate is used. Click **Advanced → Proceed**.
+>  Browsers will show a security warning because a self-signed certificate is used. Click **Advanced → Proceed**.
 
 ---
 
-## 📷 Screenshots
-
-Add screenshots here later.
-
-- Login Page
-- Student Dashboard
-- Teacher Dashboard
-- Attendance Output
-
----
-
-## 📱 Troubleshooting
+##  Troubleshooting
 
 ### Camera not opening?
 
