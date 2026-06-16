@@ -1,0 +1,47 @@
+services:
+  # Service 1: Our Flask Web App
+  web:
+    build: .
+    env_file:
+      - .env
+    environment:
+      - DB_HOST=db
+    depends_on:
+      - db
+
+  # Service 2: Our PostgreSQL Database
+  db:
+    image: postgres:15-alpine
+    restart: always
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    env_file:
+      - .env
+    environment:
+      - POSTGRES_DB=${DB_NAME}
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASS}
+    ports:
+      - "5433:5432" # This is still ok for your local debugging
+
+  # Service 3: Our Nginx Reverse Proxy
+  nginx:
+    image: nginx:alpine
+    restart: always
+    ports:
+      # --- UPDATED PORTS ---
+      # Expose port 80 (for http redirect)
+      - "80:80"
+      # Expose port 443 (for https)
+      - "443:443"
+    volumes:
+      # Mount our nginx config
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+      # --- NEW VOLUME ---
+      # Mount our certificates
+      - ./certs:/etc/nginx/certs
+    depends_on:
+      - web
+
+volumes:
+  postgres_data:

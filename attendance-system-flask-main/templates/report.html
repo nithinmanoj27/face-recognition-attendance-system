@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Attendance Report</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .table-container { max-width: 95%; margin: 2rem auto; background-color: white; border-radius: 0.75rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; min-width: 1200px; }
+        th, td { padding: 0.75rem 1rem; text-align: left; border-bottom: 1px solid #e5e7eb; white-space: nowrap; }
+        th { background-color: #f9fafb; font-weight: 600; color: #374151; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; position: sticky; top: 0; z-index: 10; }
+        td { font-size: 0.875rem; color: #4b5563; }
+        tbody tr:hover { background-color: #f9fafb; }
+        .status-select { padding: 0.25rem 0.5rem; border: 1px solid #d1d5db; border-radius: 0.375rem; background-color: white; cursor: pointer; min-width: 90px; font-size: 0.875rem; }
+        .status-select:focus { outline: none; border-color: #4f46e5; box-shadow: 0 0 0 1px #4f46e5; }
+        .status-select:disabled { background-color: #f3f4f6; cursor: not-allowed; }
+        .status-present { color: #059669; font-weight: 500; }
+        .status-absent { color: #dc2626; font-weight: 500; }
+        .status-na { color: #9ca3af; }
+        .btn-download { background-color: #10b981; color: white; font-weight: 500; padding: 0.75rem 1.5rem; border-radius: 0.5rem; transition: background-color 0.3s ease; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 1.5rem; }
+        .btn-download:hover { background-color: #059669; }
+        .stats-col { font-weight: 500; }
+        .percentage-col { font-weight: 600; }
+        /* Sticky Columns */
+        th:nth-child(1), td:nth-child(1) { position: sticky; left: 0; background-color: inherit; z-index: 5; border-right: 1px solid #e5e7eb; width: 120px; min-width: 120px; }
+        th:nth-child(2), td:nth-child(2) { position: sticky; left: 120px; background-color: inherit; z-index: 5; border-right: 1px solid #e5e7eb; width: 180px; min-width: 180px; }
+        th:nth-child(1) { z-index: 15; background-color: #f9fafb; }
+        th:nth-child(2) { z-index: 15; background-color: #f9fafb; }
+        .alert { padding: 1rem; border-radius: 0.5rem; margin: 1rem auto; max-width: 95%; text-align: center; }
+        .alert-success { background-color: #d1fae5; color: #065f46; }
+        .alert-danger { background-color: #fee2e2; color: #991b1b; }
+        .back-link { display: inline-block; margin-bottom: 1rem; color: #4f46e5; text-decoration: none; font-weight: 500; }
+        .back-link:hover { text-decoration: underline; }
+        .update-spinner { display: inline-block; border: 2px solid #f3f4f6; border-top: 2px solid #4f46e5; border-radius: 50%; width: 1rem; height: 1rem; animation: spin 1s linear infinite; margin-left: 0.5rem; vertical-align: middle;}
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body class="bg-gray-100 p-4">
+
+    <div class="table-container">
+        <div class="p-4 flex flex-wrap justify-between items-center gap-4">
+             <div>
+                <!-- Go back to the correct portal -->
+                <a href="{{ url_for('teacher_portal' if is_teacher_view else 'student_portal') }}" class="back-link">
+                    &larr; Back to Portal
+                </a>
+                <h1 class="text-2xl font-bold text-gray-800">Live Report: {{ subject.name }}</h1>
+                <p class="text-sm text-gray-500">{{ subject.code }}</p>
+            </div>
+            <!-- Download Button for Teachers -->
+            {% if is_teacher_view %}
+            <!-- FIX: Added subject_id to the download link -->
+            <a href="{{ url_for('download_report', subject_id=subject.id) }}" class="btn-download">Download as Excel</a>
+            {% endif %}
+        </div>
+
+        <!-- Message Area for Updates -->
+        <div id="update-message-area" class="px-4"></div>
+
+        <div class="overflow-x-auto">
+            <table>
+                <thead>
+                    <tr>
+                        <!-- Sticky headers -->
+                        <th style="min-width: 120px;">Roll Number</th>
+                        <th style="min-width: 180px;">Name</th>
+                        <th>Email</th>
+                        <th class="stats-col">Present</th>
+                        <th class="stats-col">Absent</th>
+                        <th class="stats-col">Total</th>
+                        <th class="percentage-col">%</th>
+                        <!-- Loop through unique dates for headers -->
+                        {% for date_str in unique_dates %}
+                            <th>{{ date_str }}</th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Loop through students -->
+                    {% for student in students_data %}
+                    <tr>
+                        <!-- Sticky data cells -->
+                        <td>{{ student.roll_number }}</td>
+                        <td>{{ student.name }}</td>
+                        <td>{{ student.email }}</td>
+                        <td class="stats-col">{{ student.present_count }}</td>
+                        <td class="stats-col">{{ student.absent_count }}</td>
+                        <td class="stats-col">{{ student.total_marked }}</td>
+                        <td class="percentage-col">{{ student.percentage }}%</td>
+                        <!-- Loop through dates again for this student's status -->
+                        {% for date_str in unique_dates %}
+                            <td>
+                                {% set status = student.attendance.get(date_str, '-') %}
+                                {% if is_teacher_view %}
+                                    <!-- Editable Dropdown for Teacher -->
+                                    <select class="status-select"
+                                            data-roll="{{ student.roll_number }}"
+                                            data-date="{{ date_str }}"
+                                            onchange="updateStatus(this)">
+                                        <!-- Add a '-' option for "Not Marked" -->
+                                        <option value="-" {% if status == '-' %}selected{% endif %} class="status-na">-</option>
+                                        <option value="present" {% if status == 'present' %}selected{% endif %} class="status-present">Present</option>
+                                        <option value="absent" {% if status == 'absent' %}selected{% endif %} class="status-absent">Absent</option>
+                                    </select>
+                                    <span class="update-spinner hidden ml-2"></span> <!-- Spinner per cell -->
+                                {% else %}
+                                    <!-- Read-only view for Student -->
+                                    <span class="status-{{ status|lower if status != '-' else 'na' }}">
+                                        {{ status.capitalize() if status != '-' else '-' }}
+                                    </span>
+                                {% endif %}
+                            </td>
+                        {% endfor %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+         {% if not students_data %}
+            <p class="text-center text-gray-500 p-6">No students are enrolled in this subject, or no attendance has been taken.</p>
+        {% endif %}
+    </div>
+
+    <!-- Define URLs for JavaScript -->
+    <script>
+        const urlForUpdateStatus = "{{ url_for('update_attendance_status') }}";
+        // FIX: Pass the subject ID from Flask to JavaScript
+        const currentSubjectId = {{ subject.id | tojson }};
+    </script>
+
+    {% if is_teacher_view %}
+    <script>
+        const messageArea = document.getElementById('update-message-area');
+
+        async function updateStatus(selectElement) {
+            const rollNumber = selectElement.dataset.roll;
+            const date = selectElement.dataset.date;
+            const newStatus = selectElement.value;
+            const spinner = selectElement.nextElementSibling; // Get the adjacent spinner
+
+            // Clear global message area, disable select, show local spinner
+            messageArea.innerHTML = '';
+            selectElement.disabled = true;
+            if(spinner) spinner.classList.remove('hidden');
+
+            try {
+                const response = await fetch(urlForUpdateStatus, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        // Flask-Login handles session cookie automatically
+                    },
+                    body: JSON.stringify({
+                        roll_number: rollNumber,
+                        date: date,
+                        status: newStatus,
+                        subject_id: currentSubjectId // <-- THE FIX
+                    })
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    showMessage(messageArea, result.message || 'Update successful!', false);
+                    // Note: Statistics (Present, Absent, %) will not auto-update
+                    // without a page refresh or more complex JS.
+                    // For now, we just show success.
+                } else {
+                    throw new Error(result.error || 'Update failed.');
+                }
+
+            } catch (error) {
+                console.error("Update error:", error);
+                showMessage(messageArea, `Error: ${error.message}`, true);
+            } finally {
+                 selectElement.disabled = false; // Re-enable dropdown
+                 if(spinner) spinner.classList.add('hidden'); // Hide local spinner
+            }
+        }
+
+        function showMessage(element, message, isError = false) {
+             if (!element) return;
+             element.innerHTML = `<div class="alert ${isError ? 'alert-danger' : 'alert-success'}">${message}</div>`;
+             window.scrollTo({ top: 0, behavior: 'smooth' }); // Scroll to top to see message
+        }
+
+    </script>
+    {% endif %}
+
+</body>
+</html>
+

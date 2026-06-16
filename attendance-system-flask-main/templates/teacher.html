@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teacher Portal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .form-card { background-color: white; border-radius: 0.75rem; padding: 2.5rem; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); max-width: 600px; width: 100%; transition: all 0.3s ease-in-out; margin: 2rem auto; }
+        .btn-primary { background-color: #4f46e5; color: white; font-weight: 500; padding: 0.75rem 1.5rem; border-radius: 0.5rem; transition: background-color 0.3s ease; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
+        .btn-primary:hover { background-color: #4338ca; }
+        .btn-primary:disabled { background-color: #a5b4fc; cursor: not-allowed; }
+        .btn-secondary { background-color: #6b7280; color: white; font-weight: 500; padding: 0.75rem 1.5rem; border-radius: 0.5rem; transition: background-color 0.3s ease; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
+        .btn-secondary:hover { background-color: #4b5563; }
+        .btn-success { background-color: #10b981; color: white; font-weight: 500; padding: 0.5rem 1rem; border-radius: 0.5rem; }
+        .btn-success:hover { background-color: #059669; }
+        .btn-danger { background-color: #ef4444; color: white; font-weight: 500; padding: 0.5rem 1rem; border-radius: 0.5rem; }
+        .btn-danger:hover { background-color: #dc2626; }
+        .btn-small { padding: 0.25rem 0.5rem; font-size: 0.75rem; }
+        .btn-outline { border: 1px solid #d1d5db; color: #374151; font-weight: 500; padding: 0.75rem 1.5rem; border-radius: 0.5rem; transition: all 0.3s ease; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; background-color: white;}
+        .btn-outline:hover { background-color: #f9fafb; }
+        .input-field { width: 100%; padding: 0.75rem 1rem; border: 1px solid #d1d5db; border-radius: 0.5rem; margin-top: 0.5rem; box-shadow: inset 0 2px 4px 0 rgba(0,0,0,0.05); }
+        .alert { padding: 1rem; border-radius: 0.5rem; margin-bottom: 1.5rem; text-align: center; }
+        .alert-success { background-color: #d1fae5; color: #065f46; }
+        .alert-danger { background-color: #fee2e2; color: #991b1b; }
+        .alert-warning { background-color: #fef3c7; color: #92400e; }
+        .hidden { display: none; }
+        video { width: 100%; border-radius: 0.5rem; border: 2px solid #e5e7eb; background-color: #000; margin-bottom: 1rem; }
+        canvas { display: none; }
+        .photo-strip { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1rem; padding: 0.5rem; border: 1px dashed #d1d5db; border-radius: 0.5rem; min-height: 50px; }
+        .photo-thumbnail-container { position: relative; }
+        .photo-thumbnail { width: 80px; height: 60px; object-fit: cover; border-radius: 0.25rem; border: 1px solid #e5e7eb; display: block; }
+        .remove-photo-btn { position: absolute; top: -5px; right: -5px; background-color: rgba(239, 68, 68, 0.8); color: white; border-radius: 9999px; height: 1.25rem; width: 1.25rem; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: bold; cursor: pointer; border: none; }
+        .remove-photo-btn:hover { background-color: #ef4444; }
+        .annotation-image { width: 100%; margin-top: 1rem; border-radius: 0.5rem; border: 1px solid #d1d5db; }
+        .tab-button { flex: 1; padding: 0.75rem; font-weight: 500; text-align: center; cursor: pointer; border-bottom: 2px solid transparent; color: #6b7280; }
+        .tab-button.active { color: #4f46e5; border-bottom-color: #4f46e5; }
+        .admin-section { margin-top: 2rem; border-top: 1px solid #e5e7eb; padding-top: 2rem; }
+        .admin-list { width: 100%; }
+        .admin-list-item { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; padding: 0.75rem 0; border-bottom: 1px solid #f3f4f6; gap: 1rem; }
+        .admin-list-item:last-child { border-bottom: none; }
+        .button-group { display: flex; gap: 0.5rem; flex-shrink: 0; }
+        .subject-card { background-color: #f9fafb; border: 1px solid #e5e7eb; border-radius: 0.5rem; padding: 1rem; margin-bottom: 1rem; }
+        .list-item { display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-top: 1px dashed #d1d5db; }
+        .latest-photos-section { margin-top: 2.5rem; border-top: 1px solid #e5e7eb; padding-top: 2rem; }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen p-4">
+
+    <div class="form-card">
+
+        <!-- Flashed Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %} {% for category, message in messages %}
+                <div class="alert alert-{{ category }}" role="alert">{{ message }}</div>
+            {% endfor %} {% endif %}
+        {% endwith %}
+
+        <!-- Check if user is logged in -->
+        <!-- FIX: Replaced 'isinstance(current_user, Teacher)' with session check -->
+        {% if current_user.is_authenticated and session.get('user_type') == 'teacher' %}
+            
+            <!-- === LOGGED IN VIEW === -->
+            <div id="dashboard-view">
+                <div class="flex justify-between items-start mb-6">
+                    <div>
+                        <h1 class="text-3xl font-bold">Welcome, {{ current_user.role }}</h1>
+                        <p class="text-gray-700">{{ current_user.username }} ({{ current_user.email }})</p>
+                    </div>
+                    <a href="{{ url_for('logout') }}" class="btn-danger btn-small whitespace-nowrap">Logout</a>
+                </div>
+                
+                <!-- ================== -->
+                <!-- ATTENDANCE SECTION (For Profs, TAs & Admin) -->
+                <!-- ================== -->
+                <div class="admin-section">
+                    <h2 class="text-2xl font-semibold text-center mb-4">Mark Attendance</h2>
+                    <div id="message-area-attendance" class="text-center mb-4"></div>
+                    
+                    {% if attendance_subjects %}
+                        <form id="attendance-form" class="space-y-6">
+                            <div>
+                                <label for="subject_id" class="block text-sm font-medium text-gray-700">Select Subject</label>
+                                <select id="subject_id" name="subject_id" class="input-field" required>
+                                    <option value="" disabled selected>-- Select a subject --</option>
+                                    {% for subject in attendance_subjects %}
+                                        <option value="{{ subject.id }}">{{ subject.name }} ({{ subject.code }})</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div>
+                                <label for="attendance_date" class="block text-sm font-medium text-gray-700">Attendance Date</label>
+                                <input type="date" id="attendance_date" name="attendance_date" class="input-field" required>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Live Camera Feed</label>
+                                <video id="video-feed" autoplay playsinline></video>
+                                <canvas id="canvas" class="hidden"></canvas>
+                                <button type="button" id="capture-btn" class="btn-secondary w-full mt-2">Capture Photo</button>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Captured Photos (<span id="photo-count">0</span>)</label>
+                                <div id="photo-strip" class="photo-strip bg-gray-50"></div>
+                            </div>
+                            <div>
+                                <button type="submit" id="submit-attendance-btn" class="btn-primary w-full">
+                                    <span id="submit-btn-text">Submit Attendance</span>
+                                    <svg id="spinner" class="animate-spin ml-3 h-5 w-5 text-white hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                                </button>
+                            </div>
+                        </form>
+                        <!-- Area to display annotated photos AFTER submission -->
+                        <div id="annotation-area" class="mt-8 pt-6 border-t"><h3 class="text-xl font-semibold text-center mb-4 hidden">Processed Photos (Just Submitted)</h3><div id="annotation-container" class="space-y-4"></div></div>
+                    {% else %}
+                         <p class="text-center text-gray-500">You are not assigned to any subjects for taking attendance.</p>
+                         {% if current_user.role == 'TA' %}
+                         <p class="text-center text-gray-500">Please ask your Professor to add you to a subject and approve your assignment.</p>
+                         {% endif %}
+                    {% endif %}
+                </div>
+                
+                <!-- Section to display LATEST annotated photos -->
+                <div class="latest-photos-section">
+                     <h2 class="text-xl font-semibold mb-4">Latest Attendance Photos {% if latest_photo_date %}({{ latest_photo_date.strftime('%Y-%m-%d') }}){% else %}(None Recorded Yet){% endif %}</h2>
+                     <div id="latest-annotation-container" class="space-y-4">
+                         {% if latest_photos %}
+                             {% for photo_path in latest_photos %} <img src="{{ photo_path }}?t={{ range(1, 10000) | random }}" class="annotation-image" alt="Latest Annotated Photo"> {% endfor %}
+                         {% else %} <p class="text-center text-gray-500">No photos processed yet.</p> {% endif %}
+                     </div>
+                </div>
+
+
+                <!-- ================== -->
+                <!-- ADMIN DASHBOARD    -->
+                <!-- ================== -->
+                {% if current_user.role == 'Admin' %}
+                <div class="admin-section">
+                    <h2 class="text-2xl font-semibold text-center mb-4">Admin Dashboard</h2>
+                    
+                    <!-- Staff Approvals -->
+                    <h3 class="text-xl font-medium mb-3">Pending Staff Approvals</h3>
+                    <div class="admin-list">
+                        {% if pending_teachers %}
+                            {% for teacher in pending_teachers %}
+                            <div class="admin-list-item">
+                                <div>
+                                    <p class="font-medium">{{ teacher.username }} <span class="text-sm text-gray-500">({{ teacher.role }})</span></p>
+                                    <p class="text-sm text-gray-500">{{ teacher.email }}</p>
+                                </div>
+                                <div class="button-group">
+                                    <form action="{{ url_for('approve_teacher', teacher_id=teacher.id) }}" method="POST">
+                                        <button type="submit" class="btn-success">Approve</button>
+                                    </form>
+                                    <form action="{{ url_for('deny_teacher', teacher_id=teacher.id) }}" method="POST" onsubmit="return confirm('Deny and delete this request?')">
+                                        <button type="submit" class="btn-danger">Deny</button>
+                                    </form>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <p class="text-center text-gray-500">No pending staff approvals.</p>
+                        {% endif %}
+                    </div>
+
+                    <!-- Manage Approved Teachers -->
+                    <h3 class="text-xl font-medium mb-3 mt-8">Manage Approved Staff</h3>
+                    <div class="admin-list">
+                        {% if approved_teachers %}
+                            {% for teacher in approved_teachers %}
+                            <div class="admin-list-item">
+                                <div>
+                                    <p class="font-medium">{{ teacher.username }} <span class="text-sm text-gray-500">({{ teacher.role }})</span></p>
+                                    <p class="text-sm text-gray-500">{{ teacher.email }}</p>
+                                </div>
+                                <div class="button-group">
+                                    <form action="{{ url_for('remove_teacher', teacher_id=teacher.id) }}" method="POST" onsubmit="return confirm('PERMANENTLY DELETE {{ teacher.username }}?')">
+                                        <button type="submit" class="btn-danger">Remove</button>
+                                    </form>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <p class="text-center text-gray-500">No other approved staff accounts.</p>
+                        {% endif %}
+                    </div>
+
+                    <!-- Manage Students -->
+                    <h3 class="text-xl font-medium mb-3 mt-8">Manage Students</h3>
+                    <div class="admin-list">
+                        {% if all_students %}
+                            {% for student in all_students %}
+                            <div class="admin-list-item">
+                                <div>
+                                    <p class="font-medium">{{ student.roll_number }} <span class="text-sm text-gray-500">({{ student.name }})</span></p>
+                                    <p class="text-sm text-gray-500">{{ student.email }} | Verified: {{ 'Yes' if student.is_verified else 'No' }}</p>
+                                </div>
+                                <div class="button-group">
+                                    <form action="{{ url_for('remove_student', roll_number=student.roll_number) }}" method="POST" onsubmit="return confirm('PERMANENTLY DELETE {{ student.name }}?')">
+                                        <button type="submit" class="btn-danger">Remove</d>
+                                    </form>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <p class="text-center text-gray-500">No students enrolled.</p>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- ===================== -->
+                <!-- PROFESSOR DASHBOARD -->
+                <!-- ===================== -->
+                {% if current_user.role == 'Professor' %}
+                <div class="admin-section">
+                    <h2 class="text-2xl font-semibold text-center mb-4">Professor Dashboard</h2>
+                    
+                    <!-- Create New Subject Form -->
+                    <form action="{{ url_for('create_subject') }}" method="POST" class="space-y-4 mb-8 p-4 border rounded-lg">
+                        <h3 class="text-xl font-medium">Create New Subject</h3>
+                        <div>
+                            <label for="subject_code" class="block text-sm font-medium text-gray-700">Subject Code</label>
+                            <input type="text" id="subject_code" name="subject_code" class="input-field" placeholder="e.g., CS101" required>
+                        </div>
+                        <div>
+                            <label for="subject_name" class="block text-sm font-medium text-gray-700">Subject Name</label>
+                            <input type="text" id="subject_name" name="subject_name" class="input-field" placeholder="e.g., Introduction to Programming" required>
+                        </div>
+                        <button type="submit" class="btn-primary w-full">Create Subject</button>
+                    </form>
+
+                    <!-- Manage My Subjects -->
+                    <h3 class="text-xl font-medium mb-3">Manage My Subjects</h3>
+                    <div>
+                        {% if subjects_managed %}
+                            {% for subject in subjects_managed %}
+                                <div class="subject-card">
+                                    <h4 class="text-lg font-semibold">{{ subject.name }} ({{ subject.code }})</h4>
+                                    
+                                    <div class="flex gap-2 my-4">
+                                        <a href="{{ url_for('report', subject_id=subject.id) }}" class="btn-outline w-full text-center">View Report</a>
+                                        <a href="{{ url_for('download_report', subject_id=subject.id) }}" class="btn-success w-full text-center whitespace-nowrap">Download Report</a>
+                                    </div>
+
+                                    <!-- Add Existing TA to this Subject -->
+                                    <form action="{{ url_for('add_ta_to_subject') }}" method="POST" class="flex gap-2 my-4">
+                                        <input type="hidden" name="subject_id" value="{{ subject.id }}">
+                                        <select name="ta_id" class="input-field" required>
+                                            <option value="" disabled selected>-- Select a TA to add --</option>
+                                            {% for ta in available_tas %}
+                                                {% set is_already_assigned = ta.staff_assignments | selectattr('subject_id', 'equalto', subject.id) | list | length > 0 %}
+                                                {% if not is_already_assigned %}
+                                                <option value="{{ ta.id }}">{{ ta.username }} ({{ ta.email }})</option>
+                                                {% endif %}
+                                            {% endfor %}
+                                        </select>
+                                        <button type="submit" class="btn-success whitespace-nowrap">Add TA</button>
+                                    </form>
+
+                                    <!-- List of TAs for this Subject -->
+                                    <h5 class="text-md font-semibold mt-4 mb-2">Assigned TAs:</h5>
+                                    <div>
+                                        <!-- Pending TAs -->
+                                        {% set subject_pending_tas = pending_ta_requests | selectattr('subject_id', 'equalto', subject.id) | list %}
+                                        {% if subject_pending_tas %}
+                                            <p class="text-sm font-medium text-yellow-600">Pending Approval:</p>
+                                            {% for ta_link in subject_pending_tas %}
+                                                <div class="list-item">
+                                                    <span>{{ ta_link.teacher.username }}</span>
+                                                    <div class="button-group">
+                                                        <form action="{{ url_for('approve_ta', staff_id=ta_link.id) }}" method="POST"><button type="submit" class="btn-success btn-small">Approve</button></form>
+                                                        <form action="{{ url_for('remove_ta_from_subject', staff_id=ta_link.id) }}" method="POST" onsubmit="return confirm('Deny TA request?')"><button type="submit" class="btn-danger btn-small">Deny</button></form>
+                                                    </div>
+                                                </div>
+                                            {% endfor %}
+                                        {% endif %}
+                                        
+                                        <!-- Approved TAs -->
+                                        {% set subject_approved_tas = subject.staff_assignments | selectattr('role_in_subject', 'equalto', 'TA') | selectattr('is_approved_by_prof', 'equalto', true) | list %}
+                                        {% if subject_approved_tas %}
+                                            <p class="text-sm font-medium text-green-600 mt-2">Approved:</p>
+                                            {% for ta_link in subject_approved_tas %}
+                                                <div class="list-item">
+                                                    <span>{{ ta_link.teacher.username }}</span>
+                                                    <div class="button-group">
+                                                        <form action="{{ url_for('remove_ta_from_subject', staff_id=ta_link.id) }}" method="POST" onsubmit="return confirm('Remove TA from subject?')"><button type="submit" class="btn-danger btn-small">Remove</button></form>
+                                                    </div>
+                                                </div>
+                                            {% endfor %}
+                                        {% endif %}
+                                        {% if not subject_pending_tas and not subject_approved_tas %}<p class="text-sm text-gray-500 text-center py-2">No TAs assigned.</p>{% endif %}
+                                    </div>
+
+                                    <!-- NEW: List of Enrolled Students for this Subject -->
+                                    <h5 class="text-md font-semibold mt-4 mb-2">Enrolled Students:</h5>
+                                    <div class="admin-list"> <!-- Re-using admin-list style -->
+                                        <!-- 
+                                          FIX: Use Jinja's |sort filter instead of Python's order_by 
+                                          The 'Student' class is not defined in the template.
+                                        -->
+                                        {% set enrolled_students = subject.students.all() | sort(attribute='roll_number') %}
+                                        {% if enrolled_students %}
+                                            {% for student in enrolled_students %}
+                                            <div class="admin-list-item">
+                                                <div>
+                                                    <p class="font-medium">{{ student.roll_number }}</p>
+                                                    <p class="text-sm text-gray-500">{{ student.name }}</small>
+                                                </div>
+                                                <div class="button-group">
+                                                    <form action="{{ url_for('unenroll_student_from_subject') }}" method="POST" onsubmit="return confirm('Remove {{ student.name }} from this subject?')">
+                                                        <input type="hidden" name="subject_id" value="{{ subject.id }}">
+                                                        <input type="hidden" name="roll_number" value="{{ student.roll_number }}">
+                                                        <button type="submit" class="btn-danger btn-small">Unenroll</button>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                            {% endfor %}
+                                        {% else %}
+                                            <p class="text-sm text-gray-500 text-center py-2">No students enrolled in this subject.</p>
+                                        {% endif %}
+                                    </div>
+
+                                </div>
+                            {% endfor %}
+                        {% else %}
+                            <p class="text-center text-gray-500">You have not created any subjects yet.</p>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- TA DASHBOARD -->
+                {% if current_user.role == 'TA' %}
+                <div class="admin-section">
+                    <h2 class="text-2xl font-semibold text-center mb-4">TA Dashboard</h2>
+                    {% if attendance_subjects %}
+                        <p class="text-center text-gray-500">You are approved to take attendance for the subjects listed in the "Mark Attendance" section above.</p>
+                        <h3 class="text-xl font-medium mb-3 mt-6">Your Approved Subjects</h3>
+                        <div class="subject-list">
+                             {% for subject in attendance_subjects %}
+                                <div class="subject-card flex justify-between items-center">
+                                    <div>
+                                        <h4 class="text-lg font-semibold">{{ subject.name }}</h4>
+                                        <p class="text-sm text-gray-500">{{ subject.code }}</p>
+                                    </div>
+                                    <div class="button-group">
+                                        <a href="{{ url_for('report', subject_id=subject.id) }}" class="btn-outline btn-small">View Report</a>
+                                        <a href="{{ url_for('download_report', subject_id=subject.id) }}" class="btn-success btn-small">Download</a>
+                                    </div>
+                                </div>
+                             {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-center text-gray-500">You are not yet approved for any subjects. Please contact your professor.</p>
+                    {% endif %}
+                </div>
+                {% endif %}
+                
+                <div class="mt-8 text-center">
+                    <a href="{{ url_for('logout') }}" class="text-red-600 hover:text-red-800 text-sm font-medium">Logout</a>
+                </div>
+            </div>
+
+        {% else %}
+            
+            <!-- === LOGGED OUT VIEW (Login / Register) === -->
+            <div id="auth-view">
+                 <h1 class="text-3xl font-bold text-center mb-6">Staff Portal</h1>
+                <div class="flex border-b mb-6">
+                    <button id="login-tab-btn" class="tab-button active" onclick="showAuthTab('login')">Login</button>
+                    <button id="register-tab-btn" class="tab-button" onclick="showAuthTab('register')">Register</button>
+                </div>
+                <form id="login-form" action="{{ url_for('teacher_login') }}" method="POST" class="space-y-6">
+                    <div><label for="username" class="block text-sm font-medium text-gray-700">Username</label><input type="text" id="username" name="username" class="input-field" required></div>
+                    <div><label for="password" class="block text-sm font-medium text-gray-700">Password</label><input type="password" id="password" name="password" class="input-field" required></div>
+                    <div><button type="submit" class="btn-primary w-full">Login</button></div>
+                </form>
+                <form id="register-form" action="{{ url_for('teacher_register') }}" method="POST" class="space-y-6 hidden">
+                    <div><label for="reg_username" class="block text-sm font-medium text-gray-700">Username</label><input type="text" id="reg_username" name="reg_username" class="input-field" required></div>
+                    <div><label for="reg_email" class="block text-sm font-medium text-gray-700">Email Address</label><input type="email" id="reg_email" name="reg_email" class="input-field" required></div>
+                    <div><label for="reg_password" class="block text-sm font-medium text-gray-700">Password (min 6)</label><input type="password" id="reg_password" name="reg_password" class="input-field" required minlength="6"></div>
+                    <div>
+                        <label for="reg_role" class="block text-sm font-medium text-gray-700">Register as:</label>
+                        <select id="reg_role" name="reg_role" class="input-field" required>
+                            <option value="" disabled selected>-- Select your role --</option>
+                            <option value="Professor">Professor</option>
+                            <option value="TA">Teaching Assistant (TA)</option>
+                        </select>
+                    </div>
+                    <div><button type="submit" class="btn-primary w-full">Request Registration</button></div>
+                </form>
+                 <div class="text-center mt-6">
+                    <a href="{{ url_for('index') }}" class="text-indigo-600 hover:text-indigo-800 text-sm font-medium">Back to Welcome Page</a>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- 
+      FIX: Define URLs in a separate <script> tag BEFORE the main logic.
+      This ensures Flask renders them as strings before the JS file tries to use them.
+    -->
+    <script>
+        // These will be replaced by Flask's url_for when rendered by the server
+        const urlForProcessAttendance = "{{ url_for('process_attendance') }}";
+        const urlForTeacherLogin = "{{ url_for('teacher_login') }}";
+        const urlForTeacherRegister = "{{ url_for('teacher_register') }}";
+        const urlForLogout = "{{ url_for('logout') }}";
+        const urlForIndex = "{{ url_for('index') }}";
+        // Other URLs are in form 'action' attributes and don't need JS variables
+    </script>
+
+
+    <script>
+        // --- DOM Elements ---
+        const video = document.getElementById('video-feed'); const canvas = document.getElementById('canvas'); const captureBtn = document.getElementById('capture-btn'); const photoStrip = document.getElementById('photo-strip'); const photoCountSpan = document.getElementById('photo-count'); const attendanceForm = document.getElementById('attendance-form'); const submitBtn = document.getElementById('submit-attendance-btn'); const submitBtnText = document.getElementById('submit-btn-text'); const spinner = document.getElementById('spinner'); const messageArea = document.getElementById('message-area-attendance'); const annotationContainer = document.getElementById('annotation-container'); const annotationHeader = document.querySelector('#annotation-area h3');
+        const latestAnnotationContainer = document.getElementById('latest-annotation-container');
+        
+        let stream; let capturedPhotos = [];
+
+        // --- NEW Camera Setup (V17) ---
+        // --- NEW Camera Setup (V17) ---
+async function setupCamera() { 
+    if (!video) return; // Don't run if attendance view isn't visible
+    console.log("Setting up camera..."); 
+    if (stream) stream.getTracks().forEach(t => t.stop()); // Stop old stream
+
+    try {
+        // --- THIS IS THE CHANGE ---
+        // 1. Try rear camera first (for phones)
+        console.log("Attempting to get rear camera (environment)...");
+        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false });
+        video.srcObject = stream;
+        console.log("Rear camera active.");
+        if(captureBtn) captureBtn.disabled = false;
+    } catch (envErr) {
+        console.warn("Rear camera (environment) failed:", envErr.name, envErr.message);
+        
+        // 2. Fallback to front camera (for laptops/etc.)
+        console.log("Attempting to get front camera (user)...");
+        try {
+            stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false });
+            video.srcObject = stream;
+            console.log("Front camera active.");
+            if(captureBtn) captureBtn.disabled = false;
+        } catch (userErr) {
+            console.error("Front camera (user) also failed:", userErr.name, userErr.message);
+            // Handle final errors
+            let errMsg = `Camera Error: ${userErr.message}.`;
+            if (userErr.name === 'NotAllowedError') {
+                errMsg = "Camera permission denied. Allow in browser settings (padlock ⓘ icon).";
+            } else if (userErr.name === 'NotFoundError') {
+                errMsg = "No camera found on your device.";
+            } else if (userErr.name === 'NotReadableError') {
+                errMsg = "Camera is already in use by another app (Zoom, Teams, etc.).";
+            }
+            showMessage(messageArea, errMsg, true);
+            if (captureBtn) captureBtn.disabled = true;
+        }
+    } 
+}
+        
+        // --- Capture Photo ---
+        if (captureBtn) { 
+            captureBtn.addEventListener('click', () => { 
+                console.log("Capture click."); 
+                if (!stream || !stream.active) { 
+                    showMessage(messageArea, 'Camera not active. Please refresh and grant permission.', true); 
+                    return; 
+                } 
+                const ctx = canvas.getContext('2d'); 
+                canvas.width = video.videoWidth; 
+                canvas.height = video.videoHeight; 
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height); 
+                canvas.toBlob(blob => { 
+                    if (blob) { 
+                        const file = new File([blob], `c_${Date.now()}.jpg`, { type: 'image/jpeg' }); 
+                        capturedPhotos.push(file); 
+                        updatePhotoStrip(); 
+                        console.log("Photo captured, count:", capturedPhotos.length); 
+                    } else { 
+                        console.error("Blob conversion failed."); 
+                        showMessage(messageArea, 'Capture fail (blob error).', true); 
+                    } 
+                }, 'image/jpeg', 0.9); 
+            }); 
+        }
+        
+        // --- Update Photo Strip ---
+        function updatePhotoStrip() { 
+            if (!photoStrip) return; 
+            photoStrip.innerHTML = ''; 
+            capturedPhotos.forEach((file, index) => { 
+                const div = document.createElement('div'); 
+                div.className = 'photo-thumbnail-container'; 
+                const img = document.createElement('img'); 
+                img.src = URL.createObjectURL(file); 
+                img.classList.add('photo-thumbnail'); 
+                img.onload = () => URL.revokeObjectURL(img.src); 
+                const rmBtn = document.createElement('button'); 
+                rmBtn.textContent = '×'; 
+                rmBtn.type = 'button'; 
+                rmBtn.className = 'remove-photo-btn'; 
+                rmBtn.onclick = (e) => { e.preventDefault(); removePhoto(index); }; 
+                div.appendChild(img); 
+                div.appendChild(rmBtn); 
+                photoStrip.appendChild(div); 
+            }); 
+            if (photoCountSpan) photoCountSpan.textContent = capturedPhotos.length; 
+        }
+        
+        // --- Remove Photo ---
+        function removePhoto(index) { console.log("Removing photo:", index); capturedPhotos.splice(index, 1); updatePhotoStrip(); }
+        
+        // --- Submit Attendance ---
+        if (attendanceForm) { 
+            attendanceForm.addEventListener('submit', async (e) => { 
+                e.preventDefault(); 
+                console.log("Att submit.");
+                const subjectId = document.getElementById('subject_id').value;
+                const date = document.getElementById('attendance_date').value;
+                if (!subjectId) { showMessage(messageArea, 'Select a subject.', true); return; }
+                if (!date) { showMessage(messageArea, 'Select a date.', true); return; }
+                if (capturedPhotos.length === 0) { showMessage(messageArea, 'Capture at least one photo.', true); return; }
+                
+                setSubmitButtonState(true); 
+                messageArea.innerHTML = ''; 
+                annotationContainer.innerHTML = ''; 
+                if(annotationHeader) annotationHeader.classList.add('hidden');
+                
+                const formData = new FormData();
+                formData.append('subject_id', subjectId);
+                formData.append('attendance_date', date);
+                capturedPhotos.forEach((f) => formData.append('photos', f));
+                console.log("Submitting:", date, "Subject:", subjectId, capturedPhotos.length, "photos.");
+
+                try {
+                    // Use the JS variable defined at the top
+                    const response = await fetch(urlForProcessAttendance, { method: 'POST', body: formData }); 
+                    const result = await response.json();
+                    console.log("Submit response:", result);
+                    if (response.ok) {
+                        showMessage(messageArea, result.message || 'Processed.', false);
+                        if (result.annotated_images && result.annotated_images.length > 0) {
+                            if(annotationHeader) annotationHeader.classList.remove('hidden');
+                            let html = ''; 
+                            result.annotated_images.forEach(p => { 
+                                html += `<img src="${p}?t=${new Date().getTime()}" class="annotation-image" alt="Processed">`; 
+                            });
+                            annotationContainer.innerHTML = html;
+                        } else { 
+                            annotationContainer.innerHTML = '<p class="text-center text-gray-500">No annotations generated.</p>'; 
+                        }
+                        capturedPhotos = []; 
+                        updatePhotoStrip();
+                        // Update the "Latest Photos" section dynamically
+                        updateLatestPhotosDisplay(result.annotated_images || [], date); 
+                    } else { 
+                        throw new Error(result.error || 'Unknown error.'); 
+                    }
+                } catch (error) { 
+                    console.error("Submit error:", error); 
+                    showMessage(messageArea, `Error: ${error.message}`, true);
+                } finally { 
+                    setSubmitButtonState(false); 
+                }
+            }); 
+        }
+
+        // --- NEW: Function to update the latest photos display ---
+        function updateLatestPhotosDisplay(photoPaths, photoDate) { 
+            const latestCont = document.getElementById('latest-annotation-container'); 
+            const latestHdr = document.querySelector('.latest-photos-section h2'); 
+            if (!latestCont || !latestHdr) return; 
+            latestHdr.textContent = `Latest Photos (${photoDate || 'N/A'})`; 
+            if (photoPaths && photoPaths.length > 0) { 
+                let html = ''; 
+                photoPaths.forEach(p => { 
+                    html += `<img src="${p}?t=${new Date().getTime()}" class="annotation-image" alt="Latest Annotated">`; 
+                }); 
+                latestCont.innerHTML = html; 
+            } else { 
+                latestCont.innerHTML = '<p class="text-center text-gray-500">No photos for this date.</p>'; 
+            } 
+        }
+        
+        // --- Helpers ---
+        function setSubmitButtonState(isSubmitting) { if (!submitBtn) return; submitBtn.disabled = isSubmitting; submitBtnText.textContent = isSubmitting ? 'Submitting...' : 'Submit Attendance'; isSubmitting ? spinner?.classList.remove('hidden') : spinner?.classList.add('hidden'); }
+        function showMessage(el, msg, isError = false) { if (!el) return; console.log(`Msg (Err: ${isError}): ${msg}`); el.innerHTML = `<div class="alert ${isError ? 'alert-danger' : 'alert-success'}">${msg}</div>`; el.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+        
+        // --- Auth Tabs ---
+        const loginTabBtn = document.getElementById('login-tab-btn'); const registerTabBtn = document.getElementById('register-tab-btn'); const loginForm = document.getElementById('login-form'); const registerForm = document.getElementById('register-form');
+        function showAuthTab(tab) { const flashes = document.querySelectorAll('#auth-view > .alert'); flashes.forEach(el => el.style.display = 'none'); if (tab === 'login') { loginTabBtn?.classList.add('active'); registerTabBtn?.classList.remove('active'); loginForm?.classList.remove('hidden'); registerForm?.classList.add('hidden'); } else { loginTabBtn?.classList.remove('active'); registerTabBtn?.classList.add('active'); loginForm?.classList.add('hidden'); registerForm?.classList.remove('hidden'); } }
+        
+        // --- Init ---
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log("Teacher DOM Loaded.");
+            // FIX: Check for 'video-feed' element directly
+            // This is the element that actually needs the camera.
+            if (document.getElementById('video-feed')) {
+                console.log("Attendance form detected, setting up camera...");
+                const today = new Date().toISOString().split('T')[0];
+                const dateInput = document.getElementById('attendance_date');
+                if (dateInput) dateInput.value = today;
+                setupCamera(); // Setup camera for attendance
+            }
+            if (document.getElementById('auth-view')) {
+                console.log("Auth view detected, default tab login.");
+                showAuthTab('login');
+            }
+        });
+    </script>
+</body>
+</html>
+
