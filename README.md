@@ -1,6 +1,3 @@
-# face-recognition-attendance-system
-Secure attendance management system using face recognition, Flask, PostgreSQL, Docker, and OpenCV.
-
 #  Face Recognition Attendance System
 
 A secure, containerized web application that automates student attendance using face recognition technology. Built using Flask, PostgreSQL, OpenCV, and Docker, the system provides secure role-based access control, live attendance marking, and verifiable proof-of-attendance generation.
